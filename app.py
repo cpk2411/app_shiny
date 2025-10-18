@@ -160,11 +160,28 @@ def ajouter_etiquettes_pourcentage(ax, total):
         y = p.get_height() + 0.01
         ax.annotate(percentage, (x, y), ha='center', va='bottom')
 
-# Chargement des données et modèles
 @st.cache_data
 def load_data():
-    """Charge les données depuis le CSV"""
-    return pd.read_csv("data/base_analyse.csv")
+    """Charge les données depuis le CSV avec gestion d'encodage"""
+    try:
+        # Essayer différents encodages
+        encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+        
+        for encoding in encodings:
+            try:
+                df = pd.read_csv("data/base_analyse.csv", encoding=encoding)
+                st.success(f"✅ Données chargées avec encodage: {encoding}")
+                return df
+            except UnicodeDecodeError:
+                continue
+        
+        # Si aucun encodage ne fonctionne
+        st.error("❌ Impossible de charger le fichier CSV avec les encodages standards")
+        return pd.DataFrame()
+        
+    except Exception as e:
+        st.error(f"Erreur de chargement des données: {e}")
+        return pd.DataFrame()
 
 @st.cache_resource
 def load_models():
