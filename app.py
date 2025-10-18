@@ -284,7 +284,7 @@ def create_shap_detailed_table(shap_values, input_data, feature_names):
     
     # Ajouter une colonne d'interprétation
     def get_interpretation(row):
-        if row['Impact SHAP'] > 0:
+        if row['Impact SHAP'] < 0:
             return f"Augmente le risque de {row['Impact SHAP']:.4f}"
         else:
             return f"Réduit le risque de {abs(row['Impact SHAP']):.4f}"
@@ -897,6 +897,289 @@ def show_model_performance():
         st.error(f"Erreur lors du chargement des résultats: {e}")
         st.info("Assurez-vous que le fichier 'assets/resultats_modeles.xlsx' existe")
 
+# def show_predictions():
+#     """Interface de prédictions avec analyse SHAP"""
+#     st.markdown('<div class="section-header">🔮 Prédictions en Temps Réel avec Analyse SHAP</div>', unsafe_allow_html=True)
+    
+#     models = load_models()
+#     le, scaler = load_preprocessors()
+    
+#     if not models:
+#         st.error("❌ Impossible de charger les modèles")
+#         st.info("Veuillez vérifier que les fichiers .pkl sont dans le dossier 'assets/'")
+#         return
+    
+#     if le is None:
+#         st.error("❌ Impossible de charger le label encoder")
+#         return
+    
+#     # Dictionnaires pour les variables qualitatives
+#     client_type_options = {
+#         1: "Particulier",
+#         2: "Entreprise"
+#     }
+    
+#     credit_type_options = {
+#         1: "Crédit par signature",
+#         2: "Crédit de caisse", 
+#         3: "Crédit immobilier",
+#         4: "Financement équipement",
+#         5: "Avance sur marché",
+#         6: "Financement fonds de commerce",
+#         7: "Microcrédit",
+#         8: "Crédit à la consommation"
+#     }
+    
+#     region_options = {
+#         1: "OUEST",
+#         2: "NORD",
+#         3: "SUD-OUEST", 
+#         4: "SUD-OUEST",
+#         5: "NORD-EST",
+#         6: "SUD",
+#         7: "CENTRE",
+#         8: "CENTRE-OUEST",
+#         9: "CENTRE-EST",
+#         10: "CENTRE-NORD",
+#         11: "CENTRE-SUD"
+#     }
+    
+#     sector_options = {
+#         1: "Commerce",
+#         2: "BTP",
+#         3: "Industrie",
+#         4: "Services",
+#         5: "Agriculture", 
+#         6: "Transport",
+#         7: "Restauration",
+#         8: "Immobilier",
+#         9: "Finance",
+#         10: "Santé",
+#         11: "Education",
+#         12: "IT",
+#         13: "Artisanat",
+#         14: "Energie",
+#         15: "Autres"
+#     }
+    
+#     # Interface de saisie avec design amélioré
+#     st.markdown("""
+#     <div class="input-group">
+#         <h3>📋 Saisie des Caractéristiques du Crédit</h3>
+#     </div>
+#     """, unsafe_allow_html=True)
+    
+#     # Organisation des champs en colonnes
+#     col1, col2, col3 = st.columns(3)
+    
+#     with col1:
+#         st.markdown("**💰 Variables Financières**")
+#         capital_paye = st.number_input("Capital Payé (t3)", min_value=0.0, value=50000.0, step=1000.0, format="%.4f")
+#         interet_paye = st.number_input("Intérêts Payés (t3)", min_value=0.0, value=5000.0, step=100.0, format="%.4f")
+#         montant_credit = st.number_input("Montant Crédit Total (t3)", min_value=0.0, value=100000.0, step=1000.0, format="%.4f")
+#         montant_debit = st.number_input("Montant Débit Total (t3)", min_value=0.0, value=80000.0, step=1000.0, format="%.4f")
+#         montant_moy = st.number_input("Montant Moyen (t3)", min_value=0.0, value=5000.0, step=100.0, format="%.4f")
+        
+#     with col2:
+#         st.markdown("**📊 Ratios et Pourcentages**")
+#         ratio_interet = st.number_input("Ratio Intérêt/Capital (t3)", min_value=0.0, value=0.1, step=0.0001, format="%.4f")
+#         pct_interet = st.number_input("Pourcentage Intérêt Payé (t3)", min_value=0.0, max_value=1.0, value=0.5, step=0.0001, format="%.4f")
+#         pct_capital = st.number_input("Pourcentage Capital Payé (t3)", min_value=0.0, max_value=1.0, value=0.6, step=0.0001, format="%.4f")
+#         retard_cumule_ratio = st.number_input("Ratio Retard Cumulé (t3)", min_value=0.0, value=0.05, step=0.0001, format="%.4f")
+#         ratio_debit_credit = st.number_input("Ratio Débit/Crédit (t3)", min_value=0.0, value=0.8, step=0.0001, format="%.4f")
+#         pct_retards = st.number_input("Pourcentage Retards (t3)", min_value=0.0, max_value=1.0, value=0.1, step=0.0001, format="%.4f")
+        
+#     with col3:
+#         st.markdown("**🔢 Comportement de Paiement**")
+#         nb_ech_payees = st.number_input("Nb Échéances Payées (t3)", min_value=0, value=12, step=1)
+#         retard_moyen = st.number_input("Retard Moyen (jours t3)", min_value=0.0, value=5.0, step=0.1, format="%.1f")
+#         nb_mvts_credit = st.number_input("Nb Mouvements Crédit (t3)", min_value=0, value=10, step=1)
+#         nb_mvts_debit = st.number_input("Nb Mouvements Débit (t3)", min_value=0, value=8, step=1)
+#         duree_ecart = st.number_input("Durée Écart (t3)", min_value=0, value=30, step=1)
+#          # Ajout des champs timestamp si nécessaire
+#         st.markdown("**📅 Dates des Mouvements**")
+#         premier_mouvement_month = st.number_input("Mois Premier Mouvement (t3)", min_value=1, max_value=12, value=1)
+#         premier_mouvement_day = st.number_input("Jour Premier Mouvement (t3)", min_value=1, max_value=31, value=1)
+#         dernier_mouvement_month = st.number_input("Mois Dernier Mouvement (t3)", min_value=1, max_value=12, value=2)
+#         dernier_mouvement_day = st.number_input("Jour Dernier Mouvement (t3)", min_value=1, max_value=31, value=1)
+        
+#         st.markdown("**👥 Informations Client**")
+#         client_type = st.selectbox("Type de Client", options=list(client_type_options.keys()), 
+#                                  format_func=lambda x: client_type_options[x])
+#         credit_type = st.selectbox("Type de Crédit", options=list(credit_type_options.keys()),
+#                                  format_func=lambda x: credit_type_options[x])
+#         region = st.selectbox("Région", options=list(region_options.keys()),
+#                             format_func=lambda x: region_options[x])
+#         sector = st.selectbox("Secteur d'Activité", options=list(sector_options.keys()),
+#                             format_func=lambda x: sector_options[x])
+    
+#         # Utilisation d'un seul modèle (XGBoost)
+#     selected_model = 'XGBoost'
+#     st.markdown("""
+#     <div class="input-group">
+#         <h3>🤖 Modèle Utilisé</h3>
+#     </div>
+#     """, unsafe_allow_html=True)
+
+#     st.info(f"**Modèle utilisé :** {selected_model}")
+
+#     # Option pour l'analyse SHAP
+#     st.markdown("""
+#     <div class="input-group">
+#         <h3>🔍 Analyse Explicative SHAP</h3>
+#     </div>
+#     """, unsafe_allow_html=True)
+        
+#     # Option pour l'analyse SHAP
+#     st.markdown("""
+#     <div class="input-group">
+#         <h3>🔍 Analyse Explicative SHAP</h3>
+#     </div>
+#     """, unsafe_allow_html=True)
+    
+#     enable_shap = st.checkbox("Activer l'analyse SHAP détaillée", value=True,
+#                             help="Afficher l'analyse détaillée de l'impact de chaque variable sur la prédiction")
+    
+#     # Bouton de prédiction stylisé
+#     col1, col2, col3 = st.columns([1, 2, 1])
+#     with col2:
+#         predict_button = st.button("🚀 Lancer la Prédiction et l'Analyse SHAP", 
+#                                  use_container_width=True, 
+#                                  type="primary",
+#                                  help="Cliquez pour analyser le risque de défaut avec explications détaillées")
+    
+#     if predict_button:
+#         # ORDRE EXACT des colonnes utilisé pendant l'entraînement
+#         # ORDRE EXACT des colonnes utilisé pendant l'entraînement (avec les timestamps)
+#         expected_columns = [
+#             'capital_paye_t3', 'interet_paye_t3', 'nb_ech_payees_t3', 
+#             'retard_moyen_jours_t3', 'nb_mvts_credit_t3', 'nb_mvts_debit_t3', 
+#             'montant_credit_total_t3', 'montant_debit_total_t3', 'ratio_interet_sur_capital_paye_t3', 
+#             'pct_interet_paye_t3', 'montant_moy_t3', 'pct_capital_paye_t3', 
+#             'retard_cumule_ratio_t3', 'ratio_debit_credit_t3', 'duree_ecart_t3', 
+#             'pct_retards_t3', 'premier_mouvement_t3_timestamp', 'premier_mouvement_t3_month', 
+#             'premier_mouvement_t3_day', 'dernier_mouvement_t3_timestamp', 
+#             'dernier_mouvement_t3_month', 'dernier_mouvement_t3_day', 
+#             'client_type', 'credit_type', 'region', 'sector'
+#         ]
+        
+#         # Préparation des features avec l'ORDRE EXACT (incluant les timestamps)
+#         # Pour les timestamps, on utilise des valeurs par défaut réalistes
+#         input_data = pd.DataFrame({
+#             'capital_paye_t3': [capital_paye],
+#             'interet_paye_t3': [interet_paye],
+#             'nb_ech_payees_t3': [nb_ech_payees],
+#             'retard_moyen_jours_t3': [retard_moyen],
+#             'nb_mvts_credit_t3': [nb_mvts_credit],
+#             'nb_mvts_debit_t3': [nb_mvts_debit],
+#             'montant_credit_total_t3': [montant_credit],
+#             'montant_debit_total_t3': [montant_debit],
+#             'ratio_interet_sur_capital_paye_t3': [ratio_interet],
+#             'pct_interet_paye_t3': [pct_interet],
+#             'montant_moy_t3': [montant_moy],
+#             'pct_capital_paye_t3': [pct_capital],
+#             'retard_cumule_ratio_t3': [retard_cumule_ratio],
+#             'ratio_debit_credit_t3': [ratio_debit_credit],
+#             'duree_ecart_t3': [duree_ecart],
+#             'pct_retards_t3': [pct_retards],
+#             # Ajout des colonnes timestamp avec des valeurs par défaut
+#             'premier_mouvement_t3_timestamp': [1640995200],  # 1er janvier 2022
+#             'premier_mouvement_t3_month': [1],
+#             'premier_mouvement_t3_day': [1],
+#             'dernier_mouvement_t3_timestamp': [1643673600],  # 1er février 2022
+#             'dernier_mouvement_t3_month': [2],
+#             'dernier_mouvement_t3_day': [1],
+#             'client_type': [client_type],
+#             'credit_type': [credit_type],
+#             'region': [region],
+#             'sector': [sector]
+#         })
+        
+#         # Réorganiser les colonnes dans l'ordre exact utilisé pendant l'entraînement
+#         input_data = input_data[expected_columns]
+        
+#                 # Prédiction avec XGBoost uniquement
+#         model = models['XGBoost']
+
+#         # Vérifier si c'est un dictionnaire et extraire le modèle
+#         if isinstance(model, dict):
+#             # Si c'est un dictionnaire, extraire le modèle
+#             if 'model' in model:
+#                 model = model['model']
+#             elif 'classifier' in model:
+#                 model = model['classifier']
+#             elif 'estimator' in model:
+#                 model = model['estimator']
+#             else:
+#                 # Prendre le premier élément du dictionnaire
+#                 model = list(model.values())[0]
+
+#         try:
+#             # Pour XGBoost, pas besoin de scaler spécifique
+#             prediction_encoded = model.predict(input_data)[0]
+#             proba = model.predict_proba(input_data)[0]
+            
+#             prediction = le.inverse_transform([prediction_encoded])[0]
+            
+#             # Affichage des résultats avec design amélioré
+#             st.markdown("---")
+#             st.markdown('<div class="section-header">🎯 Résultat de la Prédiction</div>', unsafe_allow_html=True)
+            
+#             col1, col2 = st.columns(2)
+            
+#             with col1:
+#                 if prediction == 'SOLDE':
+#                     st.success(f"## ✅ CRÉDIT SOLDE")
+#                     st.metric(
+#                         "Probabilité de Solde", 
+#                         f"{proba[1]:.4%}",
+#                         delta=f"Risque faible: {proba[0]:.4%}" 
+#                     )
+#                 else:
+#                     st.error(f"## 🚨 RISQUE DE DÉFAUT")
+#                     st.metric(
+#                         "Probabilité de Défaut", 
+#                         f"{proba[0]:.4%}",
+#                         delta=f"Solde: {proba[1]:.4%}",
+#                         delta_color="inverse"
+#                     )
+                    
+#             with col2:
+#                 # Jauge de risque améliorée
+#                 risk_score = proba[0] * 100
+#                 fig = go.Figure(go.Indicator(
+#                     mode = "gauge+number+delta",
+#                     value = risk_score,
+#                     domain = {'x': [0, 1], 'y': [0, 1]},
+#                     title = {'text': "Score de Risque", 'font': {'size': 20}},
+#                     delta = {'reference': 50},
+#                     gauge = {
+#                         'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+#                         'bar': {'color': "darkblue"},
+#                         'bgcolor': "white",
+#                         'borderwidth': 2,
+#                         'bordercolor': "gray",
+#                         'steps': [
+#                             {'range': [0, 20], 'color': "lightgreen"},
+#                             {'range': [20, 50], 'color': "yellow"},
+#                             {'range': [50, 80], 'color': "orange"},
+#                             {'range': [80, 100], 'color': "red"}
+#                         ],
+#                         'threshold': {
+#                             'line': {'color': "red", 'width': 4},
+#                             'thickness': 0.75,
+#                             'value': 90
+#                         }
+#                     }
+#                 ))
+#                 fig.update_layout(height=300, font={'color': "darkblue", 'family': "Arial"})
+#                 st.plotly_chart(fig, use_container_width=True)
+
+#         except Exception as e:
+#             st.error(f"❌ Erreur lors de la prédiction: {e}")
+#             st.info("Vérifiez que toutes les features nécessaires sont fournies")
+#             # Arrêter l'exécution ici pour éviter d'autres erreurs
+#             st.stop()
 def show_predictions():
     """Interface de prédictions avec analyse SHAP"""
     st.markdown('<div class="section-header">🔮 Prédictions en Temps Réel avec Analyse SHAP</div>', unsafe_allow_html=True)
@@ -906,7 +1189,6 @@ def show_predictions():
     
     if not models:
         st.error("❌ Impossible de charger les modèles")
-        st.info("Veuillez vérifier que les fichiers .pkl sont dans le dossier 'assets/'")
         return
     
     if le is None:
@@ -914,62 +1196,29 @@ def show_predictions():
         return
     
     # Dictionnaires pour les variables qualitatives
-    client_type_options = {
-        1: "Particulier",
-        2: "Entreprise"
-    }
-    
+    client_type_options = {1: "Particulier", 2: "Entreprise"}
     credit_type_options = {
-        1: "Crédit par signature",
-        2: "Crédit de caisse", 
-        3: "Crédit immobilier",
-        4: "Financement équipement",
-        5: "Avance sur marché",
-        6: "Financement fonds de commerce",
-        7: "Microcrédit",
-        8: "Crédit à la consommation"
+        1: "Crédit par signature", 2: "Crédit de caisse", 3: "Crédit immobilier",
+        4: "Financement équipement", 5: "Avance sur marché", 6: "Financement fonds de commerce",
+        7: "Microcrédit", 8: "Crédit à la consommation"
     }
-    
     region_options = {
-        1: "OUEST",
-        2: "NORD",
-        3: "SUD-OUEST", 
-        4: "SUD-OUEST",
-        5: "NORD-EST",
-        6: "SUD",
-        7: "CENTRE",
-        8: "CENTRE-OUEST",
-        9: "CENTRE-EST",
-        10: "CENTRE-NORD",
-        11: "CENTRE-SUD"
+        1: "OUEST", 2: "NORD", 3: "SUD-OUEST", 4: "SUD-OUEST", 5: "NORD-EST",
+        6: "SUD", 7: "CENTRE", 8: "CENTRE-OUEST", 9: "CENTRE-EST", 10: "CENTRE-NORD", 11: "CENTRE-SUD"
     }
-    
     sector_options = {
-        1: "Commerce",
-        2: "BTP",
-        3: "Industrie",
-        4: "Services",
-        5: "Agriculture", 
-        6: "Transport",
-        7: "Restauration",
-        8: "Immobilier",
-        9: "Finance",
-        10: "Santé",
-        11: "Education",
-        12: "IT",
-        13: "Artisanat",
-        14: "Energie",
-        15: "Autres"
+        1: "Commerce", 2: "BTP", 3: "Industrie", 4: "Services", 5: "Agriculture",
+        6: "Transport", 7: "Restauration", 8: "Immobilier", 9: "Finance", 10: "Santé",
+        11: "Education", 12: "IT", 13: "Artisanat", 14: "Energie", 15: "Autres"
     }
     
-    # Interface de saisie avec design amélioré
+    # Interface de saisie
     st.markdown("""
     <div class="input-group">
         <h3>📋 Saisie des Caractéristiques du Crédit</h3>
     </div>
     """, unsafe_allow_html=True)
     
-    # Organisation des champs en colonnes
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -979,6 +1228,7 @@ def show_predictions():
         montant_credit = st.number_input("Montant Crédit Total (t3)", min_value=0.0, value=100000.0, step=1000.0, format="%.4f")
         montant_debit = st.number_input("Montant Débit Total (t3)", min_value=0.0, value=80000.0, step=1000.0, format="%.4f")
         montant_moy = st.number_input("Montant Moyen (t3)", min_value=0.0, value=5000.0, step=100.0, format="%.4f")
+        ecart_prev_reel = st.number_input("Écart Prévision/Réel (t3)", min_value=0.0, value=1000.0, step=100.0, format="%.4f")
         
     with col2:
         st.markdown("**📊 Ratios et Pourcentages**")
@@ -996,12 +1246,10 @@ def show_predictions():
         nb_mvts_credit = st.number_input("Nb Mouvements Crédit (t3)", min_value=0, value=10, step=1)
         nb_mvts_debit = st.number_input("Nb Mouvements Débit (t3)", min_value=0, value=8, step=1)
         duree_ecart = st.number_input("Durée Écart (t3)", min_value=0, value=30, step=1)
-         # Ajout des champs timestamp si nécessaire
+        
         st.markdown("**📅 Dates des Mouvements**")
         premier_mouvement_month = st.number_input("Mois Premier Mouvement (t3)", min_value=1, max_value=12, value=1)
         premier_mouvement_day = st.number_input("Jour Premier Mouvement (t3)", min_value=1, max_value=31, value=1)
-        dernier_mouvement_month = st.number_input("Mois Dernier Mouvement (t3)", min_value=1, max_value=12, value=2)
-        dernier_mouvement_day = st.number_input("Jour Dernier Mouvement (t3)", min_value=1, max_value=31, value=1)
         
         st.markdown("**👥 Informations Client**")
         client_type = st.selectbox("Type de Client", options=list(client_type_options.keys()), 
@@ -1013,115 +1261,93 @@ def show_predictions():
         sector = st.selectbox("Secteur d'Activité", options=list(sector_options.keys()),
                             format_func=lambda x: sector_options[x])
     
-        # Utilisation d'un seul modèle (XGBoost)
+    # Modèle utilisé
     selected_model = 'XGBoost'
-    st.markdown("""
-    <div class="input-group">
-        <h3>🤖 Modèle Utilisé</h3>
-    </div>
-    """, unsafe_allow_html=True)
-
     st.info(f"**Modèle utilisé :** {selected_model}")
-
-    # Option pour l'analyse SHAP
-    st.markdown("""
-    <div class="input-group">
-        <h3>🔍 Analyse Explicative SHAP</h3>
-    </div>
-    """, unsafe_allow_html=True)
-        
-    # Option pour l'analyse SHAP
-    st.markdown("""
-    <div class="input-group">
-        <h3>🔍 Analyse Explicative SHAP</h3>
-    </div>
-    """, unsafe_allow_html=True)
     
-    enable_shap = st.checkbox("Activer l'analyse SHAP détaillée", value=True,
-                            help="Afficher l'analyse détaillée de l'impact de chaque variable sur la prédiction")
+    enable_shap = st.checkbox("Activer l'analyse SHAP détaillée", value=True)
     
-    # Bouton de prédiction stylisé
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         predict_button = st.button("🚀 Lancer la Prédiction et l'Analyse SHAP", 
                                  use_container_width=True, 
-                                 type="primary",
-                                 help="Cliquez pour analyser le risque de défaut avec explications détaillées")
+                                  type="primary",
+                                  help="Cliquez pour analyser le risque de défaut avec explications détaillées")
     
     if predict_button:
-        # ORDRE EXACT des colonnes utilisé pendant l'entraînement
-        # ORDRE EXACT des colonnes utilisé pendant l'entraînement (avec les timestamps)
-        expected_columns = [
-            'capital_paye_t3', 'interet_paye_t3', 'nb_ech_payees_t3', 
-            'retard_moyen_jours_t3', 'nb_mvts_credit_t3', 'nb_mvts_debit_t3', 
-            'montant_credit_total_t3', 'montant_debit_total_t3', 'ratio_interet_sur_capital_paye_t3', 
-            'pct_interet_paye_t3', 'montant_moy_t3', 'pct_capital_paye_t3', 
-            'retard_cumule_ratio_t3', 'ratio_debit_credit_t3', 'duree_ecart_t3', 
-            'pct_retards_t3', 'premier_mouvement_t3_timestamp', 'premier_mouvement_t3_month', 
-            'premier_mouvement_t3_day', 'dernier_mouvement_t3_timestamp', 
-            'dernier_mouvement_t3_month', 'dernier_mouvement_t3_day', 
-            'client_type', 'credit_type', 'region', 'sector'
-        ]
-        
-        # Préparation des features avec l'ORDRE EXACT (incluant les timestamps)
-        # Pour les timestamps, on utilise des valeurs par défaut réalistes
-        input_data = pd.DataFrame({
-            'capital_paye_t3': [capital_paye],
-            'interet_paye_t3': [interet_paye],
-            'nb_ech_payees_t3': [nb_ech_payees],
-            'retard_moyen_jours_t3': [retard_moyen],
-            'nb_mvts_credit_t3': [nb_mvts_credit],
-            'nb_mvts_debit_t3': [nb_mvts_debit],
-            'montant_credit_total_t3': [montant_credit],
-            'montant_debit_total_t3': [montant_debit],
-            'ratio_interet_sur_capital_paye_t3': [ratio_interet],
-            'pct_interet_paye_t3': [pct_interet],
-            'montant_moy_t3': [montant_moy],
-            'pct_capital_paye_t3': [pct_capital],
-            'retard_cumule_ratio_t3': [retard_cumule_ratio],
-            'ratio_debit_credit_t3': [ratio_debit_credit],
-            'duree_ecart_t3': [duree_ecart],
-            'pct_retards_t3': [pct_retards],
-            # Ajout des colonnes timestamp avec des valeurs par défaut
-            'premier_mouvement_t3_timestamp': [1640995200],  # 1er janvier 2022
-            'premier_mouvement_t3_month': [1],
-            'premier_mouvement_t3_day': [1],
-            'dernier_mouvement_t3_timestamp': [1643673600],  # 1er février 2022
-            'dernier_mouvement_t3_month': [2],
-            'dernier_mouvement_t3_day': [1],
-            'client_type': [client_type],
-            'credit_type': [credit_type],
-            'region': [region],
-            'sector': [sector]
-        })
-        
-        # Réorganiser les colonnes dans l'ordre exact utilisé pendant l'entraînement
-        input_data = input_data[expected_columns]
-        
-                # Prédiction avec XGBoost uniquement
-        model = models['XGBoost']
-
-        # Vérifier si c'est un dictionnaire et extraire le modèle
-        if isinstance(model, dict):
-            # Si c'est un dictionnaire, extraire le modèle
-            if 'model' in model:
-                model = model['model']
-            elif 'classifier' in model:
-                model = model['classifier']
-            elif 'estimator' in model:
-                model = model['estimator']
-            else:
-                # Prendre le premier élément du dictionnaire
-                model = list(model.values())[0]
-
         try:
-            # Pour XGBoost, pas besoin de scaler spécifique
+            # ✅ VARIABLES EXACTES QUE LE MODÈLE ATTEND (24 colonnes seulement)
+            expected_columns = [
+                'capital_paye_t3', 'interet_paye_t3', 'nb_ech_payees_t3', 
+                'nb_mvts_credit_t3', 'nb_mvts_debit_t3', 'pct_interet_paye_t3', 
+                'retard_moyen_jours_t3', 'montant_moy_t3', 'montant_credit_total_t3', 
+                'montant_debit_total_t3', 'pct_capital_paye_t3', 'ecart_prev_reel_t3', 
+                'ratio_interet_sur_capital_paye_t3', 'retard_cumule_ratio_t3', 
+                'ratio_debit_credit_t3', 'duree_ecart_t3', 'pct_retards_t3', 
+                'premier_mouvement_t3_timestamp', 'premier_mouvement_t3_month', 
+                'premier_mouvement_t3_day', 'client_type', 'credit_type', 
+                'region', 'sector'
+            ]
+            
+            # Calcul du timestamp seulement pour premier_mouvement
+            import datetime
+            premier_mouvement_date = datetime.datetime(2022, premier_mouvement_month, premier_mouvement_day)
+            premier_timestamp = int(premier_mouvement_date.timestamp())
+            
+            # ✅ Préparation des données avec SEULEMENT les 24 colonnes nécessaires
+            input_data = pd.DataFrame({
+                'capital_paye_t3': [capital_paye],
+                'interet_paye_t3': [interet_paye],
+                'nb_ech_payees_t3': [nb_ech_payees],
+                'nb_mvts_credit_t3': [nb_mvts_credit],
+                'nb_mvts_debit_t3': [nb_mvts_debit],
+                'pct_interet_paye_t3': [pct_interet],
+                'retard_moyen_jours_t3': [retard_moyen],
+                'montant_moy_t3': [montant_moy],
+                'montant_credit_total_t3': [montant_credit],
+                'montant_debit_total_t3': [montant_debit],
+                'pct_capital_paye_t3': [pct_capital],
+                'ecart_prev_reel_t3': [ecart_prev_reel],
+                'ratio_interet_sur_capital_paye_t3': [ratio_interet],
+                'retard_cumule_ratio_t3': [retard_cumule_ratio],
+                'ratio_debit_credit_t3': [ratio_debit_credit],
+                'duree_ecart_t3': [duree_ecart],
+                'pct_retards_t3': [pct_retards],
+                'premier_mouvement_t3_timestamp': [premier_timestamp],
+                'premier_mouvement_t3_month': [premier_mouvement_month],
+                'premier_mouvement_t3_day': [premier_mouvement_day],
+                'client_type': [client_type],
+                'credit_type': [credit_type],
+                'region': [region],
+                'sector': [sector]
+            })
+            
+            # Réorganiser dans l'ordre exact
+            input_data = input_data[expected_columns]
+            
+            # Vérification
+            st.success(f"✅ Données préparées : {len(input_data.columns)} colonnes (exactement ce que le modèle attend)")
+            
+            # Prédiction
+            model = models['XGBoost']
+            
+            # Extraction du modèle si c'est un dictionnaire
+            if isinstance(model, dict):
+                if 'model' in model:
+                    model = model['model']
+                elif 'classifier' in model:
+                    model = model['classifier']
+                elif 'estimator' in model:
+                    model = model['estimator']
+                else:
+                    model = list(model.values())[0]
+
+            # Faire la prédiction
             prediction_encoded = model.predict(input_data)[0]
             proba = model.predict_proba(input_data)[0]
-            
             prediction = le.inverse_transform([prediction_encoded])[0]
             
-            # Affichage des résultats avec design amélioré
+            # AFFICHAGE DES RÉSULTATS
             st.markdown("---")
             st.markdown('<div class="section-header">🎯 Résultat de la Prédiction</div>', unsafe_allow_html=True)
             
@@ -1130,22 +1356,12 @@ def show_predictions():
             with col1:
                 if prediction == 'SOLDE':
                     st.success(f"## ✅ CRÉDIT SOLDE")
-                    st.metric(
-                        "Probabilité de Solde", 
-                        f"{proba[1]:.4%}",
-                        delta=f"Risque faible: {proba[0]:.4%}" 
-                    )
+                    st.metric("Probabilité de Solde", f"{proba[1]:.4%}", delta=f"Risque faible: {proba[0]:.4%}")
                 else:
                     st.error(f"## 🚨 RISQUE DE DÉFAUT")
-                    st.metric(
-                        "Probabilité de Défaut", 
-                        f"{proba[0]:.4%}",
-                        delta=f"Solde: {proba[1]:.4%}",
-                        delta_color="inverse"
-                    )
+                    st.metric("Probabilité de Défaut", f"{proba[0]:.4%}", delta=f"Solde: {proba[1]:.4%}", delta_color="inverse")
                     
             with col2:
-                # Jauge de risque améliorée
                 risk_score = proba[0] * 100
                 fig = go.Figure(go.Indicator(
                     mode = "gauge+number+delta",
@@ -1172,170 +1388,170 @@ def show_predictions():
                         }
                     }
                 ))
-                fig.update_layout(height=300, font={'color': "darkblue", 'family': "Arial"})
-                st.plotly_chart(fig, use_container_width=True)
+                fig.update_layout(height=300)
+                st.plotly_chart(fig, use_container_width=True, key="risk_gauge")  # ← AJOUT key
 
-        except Exception as e:
-            st.error(f"❌ Erreur lors de la prédiction: {e}")
-            st.info("Vérifiez que toutes les features nécessaires sont fournies")
-            # Arrêter l'exécution ici pour éviter d'autres erreurs
-            st.stop()
-
-        # ================================
-        # ANALYSE SHAP DÉTAILLÉE (DEHORS du bloc except)
-        # ================================
-        if enable_shap:
-            try:
-                st.markdown("---")
-                st.markdown('<div class="section-header">🔍 Analyse Explicative SHAP</div>', unsafe_allow_html=True)
-                
-                # Calcul des valeurs SHAP
-                with st.spinner("Calcul des explications SHAP..."):
-                    explainer, shap_values = compute_shap_analysis(
-                        model, input_data, expected_columns, 'XGBoost'
-                    )
-                
-                if shap_values is not None:
-                    # 1. Graphique summary des impacts
-                    st.markdown("#### 📊 Impact des Variables sur la Décision")
-                    shap_summary_fig = plot_shap_summary(shap_values, input_data, expected_columns)
-                    if shap_summary_fig:
-                        st.plotly_chart(shap_summary_fig, use_container_width=True)
+            # ================================
+            # ANALYSE SHAP (UNE SEULE SECTION)
+            # ================================
+            if enable_shap:
+                try:
+                    st.markdown("---")
+                    st.markdown('<div class="section-header">🔍 Analyse Explicative SHAP</div>', unsafe_allow_html=True)
                     
-                    # 2. Tableau détaillé des contributions
-                    st.markdown("#### 📋 Détail des Contributions par Variable")
-                    shap_table = create_shap_detailed_table(shap_values, input_data, expected_columns)
-                    if shap_table is not None:
-                        st.dataframe(shap_table.style.format({
-                            'Valeur': '{:.4f}',
-                            'Impact SHAP': '{:.6f}',
-                            'Impact Absolu': '{:.6f}'
-                        }).background_gradient(
-                            subset=['Impact SHAP'], 
-                            cmap='RdBu',
-                            vmin=-0.1,
-                            vmax=0.1
-                        ), use_container_width=True)
+                    with st.spinner("Calcul des explications SHAP..."):
+                        explainer, shap_values = compute_shap_analysis(model, input_data, expected_columns, 'XGBoost')
                     
-                    # 3. Analyse des facteurs clés
+                    if shap_values is not None:
+                        # Graphique summary
+                        st.markdown("#### 📊 Impact des Variables sur la Décision")
+                        shap_summary_fig = plot_shap_summary(shap_values, input_data, expected_columns)
+                        if shap_summary_fig:
+                            st.plotly_chart(shap_summary_fig, use_container_width=True, key="shap_summary")  # ← AJOUT key
+                        
+                        # Tableau détaillé
+                        st.markdown("#### 📋 Détail des Contributions par Variable")
+                        shap_table = create_shap_detailed_table(shap_values, input_data, expected_columns)
+                        if shap_table is not None:
+                            st.dataframe(shap_table.style.format({
+                                'Valeur': '{:.4f}',
+                                'Impact SHAP': '{:.6f}',
+                                'Impact Absolu': '{:.6f}'
+                            }).background_gradient(
+                                subset=['Impact SHAP'], 
+                                cmap='RdBu',
+                                vmin=-0.1,
+                                vmax=0.1
+                            ), use_container_width=True, key="shap_table")  # ← AJOUT key
+                        
+                        # 3. Analyse des facteurs clés
                     st.markdown("#### 🎯 Facteurs Clés de la Décision")
-                    
+
                     if shap_table is not None:
-                        top_positive = shap_table[shap_table['Impact SHAP'] > 0].head(3)
-                        top_negative = shap_table[shap_table['Impact SHAP'] < 0].head(3)
+                        # 🔧 CORRECTION : INVERSER l'affichage
+                        # SHAP NÉGATIF = augmente le risque (pousse vers DÉFAUT)
+                        # SHAP POSITIF = réduit le risque (pousse vers SOLDE)
+                        top_risk_factors = shap_table[shap_table['Impact SHAP'] < 0].head(3)    # Facteurs de RISQUE
+                        top_safety_factors = shap_table[shap_table['Impact SHAP'] > 0].head(3)  # Facteurs de SÉCURITÉ
                         
                         col1, col2 = st.columns(2)
                         
                         with col1:
-                            st.markdown("**📈 Facteurs Augmentant le Risque**")
-                            if not top_positive.empty:
-                                for _, row in top_positive.iterrows():
-                                    st.write(f"• **{row['Variable']}**: +{row['Impact SHAP']:.4f}")
+                            st.markdown("**📈 Facteurs Augmentant le Risque de Défaut**")
+                            if not top_risk_factors.empty:
+                                for _, row in top_risk_factors.iterrows():
+                                    st.write(f"• **{row['Variable']}**: {row['Impact SHAP']:.4f}")
+                                    st.caption(f"Valeur: {row['Valeur']:.4f}")
                             else:
                                 st.info("Aucun facteur n'augmente significativement le risque")
                         
                         with col2:
-                            st.markdown("**📉 Facteurs Réduisant le Risque**")
-                            if not top_negative.empty:
-                                for _, row in top_negative.iterrows():
-                                    st.write(f"• **{row['Variable']}**: {row['Impact SHAP']:.4f}")
+                            st.markdown("**📉 Facteurs Réduisant le Risque de Défaut**")
+                            if not top_safety_factors.empty:
+                                for _, row in top_safety_factors.iterrows():
+                                    st.write(f"• **{row['Variable']}**: +{row['Impact SHAP']:.4f}")
+                                    st.caption(f"Valeur: {row['Valeur']:.4f}")
                             else:
                                 st.info("Aucun facteur ne réduit significativement le risque")
+                        
+                        # 4. Recommandations basées sur SHAP
+                        st.markdown("#### 💡 Recommandations Stratégiques")
+                        
+                        if prediction == 'DEFAUT':
+                            st.warning("""
+                            **Actions recommandées pour réduire le risque:**
+                            - Identifier et traiter les variables à fort impact positif sur le risque
+                            - Mettre en place un suivi renforcé des indicateurs critiques
+                            - Envisager des mesures correctives pour les ratios problématiques
+                            """)
+                        else:
+                            st.success("""
+                            **Points forts du dossier:**
+                            - Les variables influencent positivement la solvabilité
+                            - Le profil présente des caractéristiques favorables
+                            - Possibilité d'envisager des conditions avantageuses
+                            """)
                     
-                    # 4. Recommandations basées sur SHAP
-                    st.markdown("#### 💡 Recommandations Stratégiques")
-                    
-                    if prediction == 'DEFAUT':
-                        st.warning("""
-                        **Actions recommandées pour réduire le risque:**
-                        - Identifier et traiter les variables à fort impact positif sur le risque
-                        - Mettre en place un suivi renforcé des indicateurs critiques
-                        - Envisager des mesures correctives pour les ratios problématiques
-                        """)
                     else:
-                        st.success("""
-                        **Points forts du dossier:**
-                        - Les variables influencent positivement la solvabilité
-                        - Le profil présente des caractéristiques favorables
-                        - Possibilité d'envisager des conditions avantageuses
-                        """)
-                
-                else:
-                    st.info("L'analyse SHAP n'est pas disponible pour ce modèle ou cette configuration.")
+                        st.info("L'analyse SHAP n'est pas disponible pour ce modèle ou cette configuration.")
+                        
+                except Exception as shap_error:
+                    st.warning(f"⚠️ L'analyse SHAP n'a pas pu être générée: {shap_error}")
+                    st.info("La prédiction a fonctionné, mais l'explication détaillée n'est pas disponible.")
+
+            # Détails de la prédiction
+            with st.expander("📊 Détails Complets de la Prédiction", expanded=False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**🤖 Informations du Modèle**")
+                    st.info(f"**Modèle utilisé:** {selected_model}")
+                    st.info(f"**Prédiction:** {prediction}")
                     
-            except Exception as shap_error:
-                st.warning(f"⚠️ L'analyse SHAP n'a pas pu être générée: {shap_error}")
-                st.info("La prédiction a fonctionné, mais l'explication détaillée n'est pas disponible.")
-
-        # Détails de la prédiction (section existante)
-        with st.expander("📊 Détails Complets de la Prédiction", expanded=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**🤖 Informations du Modèle**")
-                st.info(f"**Modèle utilisé:** {selected_model}")
-                st.info(f"**Prédiction:** {prediction}")
+                    st.markdown("**📈 Probabilités Détaillées**")
+                    prob_df = pd.DataFrame({
+                        'Classe': le.classes_,
+                        'Probabilité': proba
+                    })
+                    st.dataframe(prob_df.style.format({'Probabilité': '{:.4%}'}), use_container_width=True, key="prob_table")
                 
-                st.markdown("**📈 Probabilités Détaillées**")
-                prob_df = pd.DataFrame({
-                    'Classe': le.classes_,
-                    'Probabilité': proba
-                })
-                st.dataframe(prob_df.style.format({'Probabilité': '{:.4%}'}), use_container_width=True)
+                with col2:
+                    st.markdown("**👤 Caractéristiques du Dossier**")
+                    
+                    characteristics = {
+                        'Type de Client': client_type_options[client_type],
+                        'Type de Crédit': credit_type_options[credit_type],
+                        'Région': region_options[region],
+                        'Secteur': sector_options[sector],
+                        'Capital Payé': f"{capital_paye:,.4f}",
+                        'Intérêts Payés': f"{interet_paye:,.4f}",
+                        'Échéances Payées': f"{nb_ech_payees}",
+                        'Retard Moyen': f"{retard_moyen} jours",
+                        'Ratio Intérêt/Capital': f"{ratio_interet:.4f}",
+                        'Pourcentage Capital Payé': f"{pct_capital:.4f}"
+                    }
+                    
+                    for key, value in characteristics.items():
+                        st.write(f"**{key}:** {value}")
+
+            # Export de la prédiction avec données SHAP
+            st.markdown("---")
+            st.markdown("**💾 Export des Résultats**")
             
-            with col2:
-                st.markdown("**👤 Caractéristiques du Dossier**")
-                
-                # Créer un résumé formaté des caractéristiques
-                characteristics = {
-                    'Type de Client': client_type_options[client_type],
-                    'Type de Crédit': credit_type_options[credit_type],
-                    'Région': region_options[region],
-                    'Secteur': sector_options[sector],
-                    'Capital Payé': f"{capital_paye:,.4f} €",
-                    'Intérêts Payés': f"{interet_paye:,.4f} €",
-                    'Échéances Payées': f"{nb_ech_payees}",
-                    'Retard Moyen': f"{retard_moyen} jours",
-                    'Ratio Intérêt/Capital': f"{ratio_interet:.4f}",
-                    'Pourcentage Capital Payé': f"{pct_capital:.4f}"
-                }
-                
-                for key, value in characteristics.items():
-                    st.write(f"**{key}:** {value}")
+            prediction_data = {
+                'timestamp': pd.Timestamp.now(),
+                'model_utilise': selected_model,
+                'prediction': prediction,
+                'probabilite_defaut': f"{proba[0]:.6f}",
+                'probabilite_solde': f"{proba[1]:.6f}",
+                **input_data.iloc[0].to_dict()
+            }
+            
+            # Ajouter les données SHAP si disponibles
+            if enable_shap and 'shap_table' in locals() and shap_table is not None:
+                for _, row in shap_table.iterrows():
+                    prediction_data[f'shap_{row["Variable"]}'] = row['Impact SHAP']
+            
+            # Ajouter les libellés pour l'export
+            prediction_data['client_type_label'] = client_type_options[client_type]
+            prediction_data['credit_type_label'] = credit_type_options[credit_type]
+            prediction_data['region_label'] = region_options[region]
+            prediction_data['sector_label'] = sector_options[sector]
+            
+            prediction_df = pd.DataFrame([prediction_data])
+            csv = prediction_df.to_csv(index=False, sep=';', decimal=',')
+            
+            st.download_button(
+                label="📥 Télécharger le Rapport Complet (CSV)",
+                data=csv,
+                file_name=f"prediction_credit_shap_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="download_button"
+            )
 
-        # Export de la prédiction avec données SHAP
-        st.markdown("---")
-        st.markdown("**💾 Export des Résultats**")
-        
-        prediction_data = {
-            'timestamp': pd.Timestamp.now(),
-            'model_utilise': selected_model,
-            'prediction': prediction,
-            'probabilite_defaut': f"{proba[0]:.6f}",
-            'probabilite_solde': f"{proba[1]:.6f}",
-            **input_data.iloc[0].to_dict()
-        }
-        
-        # Ajouter les données SHAP si disponibles
-        if enable_shap and 'shap_table' in locals() and shap_table is not None:
-            for _, row in shap_table.iterrows():
-                prediction_data[f'shap_{row["Variable"]}'] = row['Impact SHAP']
-        
-        # Ajouter les libellés pour l'export
-        prediction_data['client_type_label'] = client_type_options[client_type]
-        prediction_data['credit_type_label'] = credit_type_options[credit_type]
-        prediction_data['region_label'] = region_options[region]
-        prediction_data['sector_label'] = sector_options[sector]
-        
-        prediction_df = pd.DataFrame([prediction_data])
-        csv = prediction_df.to_csv(index=False, sep=';', decimal=',')
-        
-        st.download_button(
-            label="📥 Télécharger le Rapport Complet (CSV)",
-            data=csv,
-            file_name=f"prediction_credit_shap_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
+        except Exception as e:
+            st.error(f"❌ Erreur lors de la prédiction: {e}")
+       
 
 
 # ================================
