@@ -170,7 +170,7 @@ def load_data():
         for encoding in encodings:
             try:
                 df = pd.read_csv("data/base_analyse.csv", encoding=encoding)
-                st.success(f"✅ Données chargées avec encodage: {encoding}")
+#                st.success(f"✅ Données chargées avec encodage: {encoding}")
                 return df
             except UnicodeDecodeError:
                 continue
@@ -194,7 +194,7 @@ def load_models():
         with open("assets/model_xgboost.pkl", 'rb') as f:
             models['XGBoost'] = joblib.load(f)
         
-        st.success("✅ Modèle XGBoost chargé!")
+#        st.success("✅ Modèle XGBoost chargé!")
         return models
         
     except Exception as e:
