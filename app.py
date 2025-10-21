@@ -1436,162 +1436,162 @@ def show_predictions():
                 st.plotly_chart(fig, use_container_width=True, key="risk_gauge")  # ← AJOUT key
 
            # ================================
-# ANALYSE SHAP (UNE SEULE SECTION) - VERSION CORRIGÉE
-# ================================
-if enable_shap:
-    try:
-        st.markdown("---")
-        st.markdown('<div class="section-header">🔍 Analyse Explicative SHAP</div>', unsafe_allow_html=True)
-        
-        with st.spinner("Calcul des explications SHAP..."):
-            explainer, shap_values = compute_shap_analysis(model, input_data, expected_columns, 'XGBoost')
-        
-        if shap_values is not None:
-            # Graphique summary
-            st.markdown("#### 📊 Impact des Variables sur la Décision")
-            shap_summary_fig = plot_shap_summary(shap_values, input_data, expected_columns)
-            if shap_summary_fig:
-                st.plotly_chart(shap_summary_fig, use_container_width=True)  # ⚠️ SUPPRIMÉ key=
+            # ANALYSE SHAP (UNE SEULE SECTION) - VERSION CORRIGÉE
+            # ================================
+            if enable_shap:
+                try:
+                    st.markdown("---")
+                    st.markdown('<div class="section-header">🔍 Analyse Explicative SHAP</div>', unsafe_allow_html=True)
+                    
+                    with st.spinner("Calcul des explications SHAP..."):
+                        explainer, shap_values = compute_shap_analysis(model, input_data, expected_columns, 'XGBoost')
+                    
+                    if shap_values is not None:
+                        # Graphique summary
+                        st.markdown("#### 📊 Impact des Variables sur la Décision")
+                        shap_summary_fig = plot_shap_summary(shap_values, input_data, expected_columns)
+                        if shap_summary_fig:
+                            st.plotly_chart(shap_summary_fig, use_container_width=True)  # ⚠️ SUPPRIMÉ key=
+                        
+                        # Tableau détaillé
+                        st.markdown("#### 📋 Détail des Contributions par Variable")
+                        shap_table = create_shap_detailed_table(shap_values, input_data, expected_columns)
+                        if shap_table is not None:
+                            st.dataframe(shap_table.style.format({
+                                'Valeur': '{:.4f}',
+                                'Impact SHAP': '{:.6f}',
+                                'Impact Absolu': '{:.6f}'
+                            }).background_gradient(
+                                subset=['Impact SHAP'], 
+                                cmap='RdBu',
+                                vmin=-0.1,
+                                vmax=0.1
+                            ), use_container_width=True)  # ⚠️ SUPPRIMÉ key=
+                        
+                        # 3. Analyse des facteurs clés - CORRECTION
+                        st.markdown("#### 🎯 Facteurs Clés de la Décision")
             
-            # Tableau détaillé
-            st.markdown("#### 📋 Détail des Contributions par Variable")
-            shap_table = create_shap_detailed_table(shap_values, input_data, expected_columns)
-            if shap_table is not None:
-                st.dataframe(shap_table.style.format({
-                    'Valeur': '{:.4f}',
-                    'Impact SHAP': '{:.6f}',
-                    'Impact Absolu': '{:.6f}'
-                }).background_gradient(
-                    subset=['Impact SHAP'], 
-                    cmap='RdBu',
-                    vmin=-0.1,
-                    vmax=0.1
-                ), use_container_width=True)  # ⚠️ SUPPRIMÉ key=
-            
-            # 3. Analyse des facteurs clés - CORRECTION
-            st.markdown("#### 🎯 Facteurs Clés de la Décision")
-
-            if shap_table is not None and hasattr(shap_table, 'empty'):  # ⚠️ CORRECTION ICI
-                # 🔧 CORRECTION : INVERSER l'affichage
-                # SHAP NÉGATIF = augmente le risque (pousse vers DÉFAUT)
-                # SHAP POSITIF = réduit le risque (pousse vers SOLDE)
-                top_risk_factors = shap_table[shap_table['Impact SHAP'] < 0].head(3)    # Facteurs de RISQUE
-                top_safety_factors = shap_table[shap_table['Impact SHAP'] > 0].head(3)  # Facteurs de SÉCURITÉ
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("**📈 Facteurs Augmentant le Risque de Défaut**")
-                    if not top_risk_factors.empty:
-                        for _, row in top_risk_factors.iterrows():
-                            st.write(f"• **{row['Variable']}**: {row['Impact SHAP']:.4f}")
-                            st.caption(f"Valeur: {row['Valeur']:.4f}")
+                        if shap_table is not None and hasattr(shap_table, 'empty'):  # ⚠️ CORRECTION ICI
+                            # 🔧 CORRECTION : INVERSER l'affichage
+                            # SHAP NÉGATIF = augmente le risque (pousse vers DÉFAUT)
+                            # SHAP POSITIF = réduit le risque (pousse vers SOLDE)
+                            top_risk_factors = shap_table[shap_table['Impact SHAP'] < 0].head(3)    # Facteurs de RISQUE
+                            top_safety_factors = shap_table[shap_table['Impact SHAP'] > 0].head(3)  # Facteurs de SÉCURITÉ
+                            
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.markdown("**📈 Facteurs Augmentant le Risque de Défaut**")
+                                if not top_risk_factors.empty:
+                                    for _, row in top_risk_factors.iterrows():
+                                        st.write(f"• **{row['Variable']}**: {row['Impact SHAP']:.4f}")
+                                        st.caption(f"Valeur: {row['Valeur']:.4f}")
+                                else:
+                                    st.info("Aucun facteur n'augmente significativement le risque")
+                            
+                            with col2:
+                                st.markdown("**📉 Facteurs Réduisant le Risque de Défaut**")
+                                if not top_safety_factors.empty:
+                                    for _, row in top_safety_factors.iterrows():
+                                        st.write(f"• **{row['Variable']}**: +{row['Impact SHAP']:.4f}")
+                                        st.caption(f"Valeur: {row['Valeur']:.4f}")
+                                else:
+                                    st.info("Aucun facteur ne réduit significativement le risque")
+                            
+                            # 4. Recommandations basées sur SHAP
+                            st.markdown("#### 💡 Recommandations Stratégiques")
+                            
+                            if prediction == 'DEFAUT':
+                                st.warning("""
+                                **Actions recommandées pour réduire le risque:**
+                                - Identifier et traiter les variables à fort impact positif sur le risque
+                                - Mettre en place un suivi renforcé des indicateurs critiques
+                                - Envisager des mesures correctives pour les ratios problématiques
+                                """)
+                            else:
+                                st.success("""
+                                **Points forts du dossier:**
+                                - Les variables influencent positivement la solvabilité
+                                - Le profil présente des caractéristiques favorables
+                                - Possibilité d'envisager des conditions avantageuses
+                                """)
+                    
                     else:
-                        st.info("Aucun facteur n'augmente significativement le risque")
+                        st.info("L'analyse SHAP n'est pas disponible pour ce modèle ou cette configuration.")
+                        
+                except Exception as shap_error:
+                    st.warning(f"⚠️ L'analyse SHAP n'a pas pu être générée: {shap_error}")
+                    st.info("La prédiction a fonctionné, mais l'explication détaillée n'est pas disponible.")
+            
+            # Détails de la prédiction
+            with st.expander("📊 Détails Complets de la Prédiction", expanded=False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**🤖 Informations du Modèle**")
+                    st.info(f"**Modèle utilisé:** {selected_model}")
+                    st.info(f"**Prédiction:** {prediction}")
+                    
+                    st.markdown("**📈 Probabilités Détaillées**")
+                    prob_df = pd.DataFrame({
+                        'Classe': le.classes_,
+                        'Probabilité': proba
+                    })
+                    st.dataframe(prob_df.style.format({'Probabilité': '{:.4%}'}), use_container_width=True)  # ⚠️ SUPPRIMÉ key=
                 
                 with col2:
-                    st.markdown("**📉 Facteurs Réduisant le Risque de Défaut**")
-                    if not top_safety_factors.empty:
-                        for _, row in top_safety_factors.iterrows():
-                            st.write(f"• **{row['Variable']}**: +{row['Impact SHAP']:.4f}")
-                            st.caption(f"Valeur: {row['Valeur']:.4f}")
-                    else:
-                        st.info("Aucun facteur ne réduit significativement le risque")
-                
-                # 4. Recommandations basées sur SHAP
-                st.markdown("#### 💡 Recommandations Stratégiques")
-                
-                if prediction == 'DEFAUT':
-                    st.warning("""
-                    **Actions recommandées pour réduire le risque:**
-                    - Identifier et traiter les variables à fort impact positif sur le risque
-                    - Mettre en place un suivi renforcé des indicateurs critiques
-                    - Envisager des mesures correctives pour les ratios problématiques
-                    """)
-                else:
-                    st.success("""
-                    **Points forts du dossier:**
-                    - Les variables influencent positivement la solvabilité
-                    - Le profil présente des caractéristiques favorables
-                    - Possibilité d'envisager des conditions avantageuses
-                    """)
-        
-        else:
-            st.info("L'analyse SHAP n'est pas disponible pour ce modèle ou cette configuration.")
+                    st.markdown("**👤 Caractéristiques du Dossier**")
+                    
+                    characteristics = {
+                        'Type de Client': client_type_options[client_type],
+                        'Type de Crédit': credit_type_options[credit_type],
+                        'Région': region_options[region],
+                        'Secteur': sector_options[sector],
+                        'Capital Payé': f"{capital_paye:,.4f}",
+                        'Intérêts Payés': f"{interet_paye:,.4f}",
+                        'Échéances Payées': f"{nb_ech_payees}",
+                        'Retard Moyen': f"{retard_moyen} jours",
+                        'Ratio Intérêt/Capital': f"{ratio_interet:.4f}",
+                        'Pourcentage Capital Payé': f"{pct_capital:.4f}"
+                    }
+                    
+                    for key, value in characteristics.items():
+                        st.write(f"**{key}:** {value}")
             
-    except Exception as shap_error:
-        st.warning(f"⚠️ L'analyse SHAP n'a pas pu être générée: {shap_error}")
-        st.info("La prédiction a fonctionné, mais l'explication détaillée n'est pas disponible.")
-
-# Détails de la prédiction
-with st.expander("📊 Détails Complets de la Prédiction", expanded=False):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**🤖 Informations du Modèle**")
-        st.info(f"**Modèle utilisé:** {selected_model}")
-        st.info(f"**Prédiction:** {prediction}")
-        
-        st.markdown("**📈 Probabilités Détaillées**")
-        prob_df = pd.DataFrame({
-            'Classe': le.classes_,
-            'Probabilité': proba
-        })
-        st.dataframe(prob_df.style.format({'Probabilité': '{:.4%}'}), use_container_width=True)  # ⚠️ SUPPRIMÉ key=
-    
-    with col2:
-        st.markdown("**👤 Caractéristiques du Dossier**")
-        
-        characteristics = {
-            'Type de Client': client_type_options[client_type],
-            'Type de Crédit': credit_type_options[credit_type],
-            'Région': region_options[region],
-            'Secteur': sector_options[sector],
-            'Capital Payé': f"{capital_paye:,.4f}",
-            'Intérêts Payés': f"{interet_paye:,.4f}",
-            'Échéances Payées': f"{nb_ech_payees}",
-            'Retard Moyen': f"{retard_moyen} jours",
-            'Ratio Intérêt/Capital': f"{ratio_interet:.4f}",
-            'Pourcentage Capital Payé': f"{pct_capital:.4f}"
-        }
-        
-        for key, value in characteristics.items():
-            st.write(f"**{key}:** {value}")
-
-# Export de la prédiction avec données SHAP
-st.markdown("---")
-st.markdown("**💾 Export des Résultats**")
-
-prediction_data = {
-    'timestamp': pd.Timestamp.now(),
-    'model_utilise': selected_model,
-    'prediction': prediction,
-    'probabilite_defaut': f"{proba[0]:.6f}",
-    'probabilite_solde': f"{proba[1]:.6f}",
-    **input_data.iloc[0].to_dict()
-}
-
-# Ajouter les données SHAP si disponibles - CORRECTION
-if enable_shap and shap_table is not None:  # ⚠️ CORRECTION ICI
-    for _, row in shap_table.iterrows():
-        prediction_data[f'shap_{row["Variable"]}'] = row['Impact SHAP']
-
-# Ajouter les libellés pour l'export
-prediction_data['client_type_label'] = client_type_options[client_type]
-prediction_data['credit_type_label'] = credit_type_options[credit_type]
-prediction_data['region_label'] = region_options[region]
-prediction_data['sector_label'] = sector_options[sector]
-
-prediction_df = pd.DataFrame([prediction_data])
-csv = prediction_df.to_csv(index=False, sep=';', decimal=',')
-
-st.download_button(
-    label="📥 Télécharger le Rapport Complet (CSV)",
-    data=csv,
-    file_name=f"prediction_credit_shap_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-    mime="text/csv",
-    use_container_width=True,
-    key="download_button"
-)
+            # Export de la prédiction avec données SHAP
+            st.markdown("---")
+            st.markdown("**💾 Export des Résultats**")
+            
+            prediction_data = {
+                'timestamp': pd.Timestamp.now(),
+                'model_utilise': selected_model,
+                'prediction': prediction,
+                'probabilite_defaut': f"{proba[0]:.6f}",
+                'probabilite_solde': f"{proba[1]:.6f}",
+                **input_data.iloc[0].to_dict()
+            }
+            
+            # Ajouter les données SHAP si disponibles - CORRECTION
+            if enable_shap and shap_table is not None:  # ⚠️ CORRECTION ICI
+                for _, row in shap_table.iterrows():
+                    prediction_data[f'shap_{row["Variable"]}'] = row['Impact SHAP']
+            
+            # Ajouter les libellés pour l'export
+            prediction_data['client_type_label'] = client_type_options[client_type]
+            prediction_data['credit_type_label'] = credit_type_options[credit_type]
+            prediction_data['region_label'] = region_options[region]
+            prediction_data['sector_label'] = sector_options[sector]
+            
+            prediction_df = pd.DataFrame([prediction_data])
+            csv = prediction_df.to_csv(index=False, sep=';', decimal=',')
+            
+            st.download_button(
+                label="📥 Télécharger le Rapport Complet (CSV)",
+                data=csv,
+                file_name=f"prediction_credit_shap_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="download_button"
+            )
        
 
 
