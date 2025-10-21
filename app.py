@@ -184,38 +184,27 @@ def load_data():
         return pd.DataFrame()
 
 @st.cache_resource
-@st.cache_resource
 def load_models():
-    """Charge les modèles entraînés avec gestion d'erreur et encodage"""
+    """Charge les modèles entraînés - VERSION RAPIDE"""
     models = {}
     try:
-        # Charger XGBoost avec encoding spécifique
+        st.info("🔄 Chargement du modèle XGBoost...")
+        
+        # Charger SEULEMENT XGBoost pour l'instant
         with open("assets/model_xgboost.pkl", 'rb') as f:
             models['XGBoost'] = joblib.load(f)
         
-        # Charger les autres modèles si disponibles
-        model_files = {
-            'Random Forest': "assets/model_random_forest.pkl",
-            'Logistic Regression': "assets/model_logistic_regression.pkl", 
-            'Decision Tree': "assets/model_decision_tree.pkl",
-            'SVM': "assets/model_svm.pkl"
-        }
+        st.success("✅ Modèle XGBoost chargé!")
+        return models
         
-        for name, file_path in model_files.items():
-            try:
-                with open(file_path, 'rb') as f:
-                    models[name] = joblib.load(f)
-            except FileNotFoundError:
-                st.warning(f"Modèle {name} non trouvé")
-                
     except Exception as e:
-        st.error(f"Erreur de chargement des modèles: {e}")
-        
-    return models
+        st.error(f"❌ Erreur de chargement: {e}")
+        # Retourner un modèle vide pour éviter le blocage
+        return {'XGBoost': None}
 
-@st.cache_resource  
+@st.cache_resource
 def load_preprocessors():
-    """Charge les preprocesseurs avec gestion d'erreur"""
+    """Charge les preprocesseurs - VERSION RAPIDE"""
     try:
         with open("assets/label_encoder.pkl", 'rb') as f:
             le = joblib.load(f)
@@ -223,7 +212,7 @@ def load_preprocessors():
             scaler = joblib.load(f)
         return le, scaler
     except Exception as e:
-        st.error(f"Erreur de chargement des preprocesseurs: {e}")
+        st.error(f"❌ Erreur preprocesseurs: {e}")
         return None, None
 
 # ================================
