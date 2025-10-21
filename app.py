@@ -184,37 +184,45 @@ def load_data():
         return pd.DataFrame()
 
 @st.cache_resource
+@st.cache_resource
 def load_models():
-    """Charge les modèles entraînés avec gestion d'erreur"""
+    """Charge les modèles entraînés avec gestion d'erreur et encodage"""
     models = {}
     try:
         # Charger XGBoost avec encoding spécifique
         with open("assets/model_xgboost.pkl", 'rb') as f:
             models['XGBoost'] = joblib.load(f)
         
-        # Optionnel : charger les autres modèles
-        try:
-            models['Random Forest'] = joblib.load("assets/model_random_forest.pkl")
-            models['Logistic Regression'] = joblib.load("assets/model_logistic_regression.pkl")
-        except:
-            st.warning("Certains modèles secondaires n'ont pas pu être chargés")
-            
+        # Charger les autres modèles si disponibles
+        model_files = {
+            'Random Forest': "assets/model_random_forest.pkl",
+            'Logistic Regression': "assets/model_logistic_regression.pkl", 
+            'Decision Tree': "assets/model_decision_tree.pkl",
+            'SVM': "assets/model_svm.pkl"
+        }
+        
+        for name, file_path in model_files.items():
+            try:
+                with open(file_path, 'rb') as f:
+                    models[name] = joblib.load(f)
+            except FileNotFoundError:
+                st.warning(f"Modèle {name} non trouvé")
+                
     except Exception as e:
         st.error(f"Erreur de chargement des modèles: {e}")
-        # Créer un modèle dummy pour éviter les crashs
-        from xgboost import XGBClassifier
-        models['XGBoost'] = XGBClassifier()
         
     return models
 
-@st.cache_resource
+@st.cache_resource  
 def load_preprocessors():
-    """Charge les preprocesseurs"""
+    """Charge les preprocesseurs avec gestion d'erreur"""
     try:
-        le = joblib.load("assets/label_encoder.pkl")
-        scaler = joblib.load("assets/scaler.pkl")
+        with open("assets/label_encoder.pkl", 'rb') as f:
+            le = joblib.load(f)
+        with open("assets/scaler.pkl", 'rb') as f:
+            scaler = joblib.load(f)
         return le, scaler
-    except FileNotFoundError as e:
+    except Exception as e:
         st.error(f"Erreur de chargement des preprocesseurs: {e}")
         return None, None
 
