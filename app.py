@@ -1370,7 +1370,7 @@ def show_predictions():
             input_data = input_data[expected_columns]
             
             # Vérification
-            st.success(f"✅ Données préparées : {len(input_data.columns)} colonnes (exactement ce que le modèle attend)")
+           # st.success(f"✅ Données préparées : {len(input_data.columns)} colonnes (exactement ce que le modèle attend)")
             
             # Prédiction
             model = models['XGBoost']
