@@ -218,97 +218,61 @@ def load_preprocessors():
 # ================================
 # FONCTIONS POUR L'ANALYSE SHAP
 # ================================
+
 def compute_shap_analysis(model, input_data, feature_names, model_name):
-    """Calcule et retourne les valeurs SHAP - VERSION CORRIGÉE"""
+    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions"""
     try:
         # Vérifier que le modèle supporte predict_proba
         if not hasattr(model, 'predict_proba'):
             return None, None
             
-        # Convertir en numpy array pour éviter les problèmes
-        input_array = input_data.values.astype(np.float64) if hasattr(input_data, 'values') else input_data.astype(np.float64)
-        
-        # Méthode SIMPLIFIÉE pour XGBoost
-        if model_name == 'XGBoost':
-            try:
-                # Essayer la méthode directe
-                explainer = shap.TreeExplainer(model)
-                shap_values = explainer.shap_values(input_array)
-                
-                # Gérer le format des valeurs SHAP
-                if isinstance(shap_values, list):
-                    if len(shap_values) == 2:
-                        shap_values = shap_values[1]  # Classe positive
-                    else:
-                        shap_values = shap_values[0]
-                
-                return explainer, shap_values
-                
-            except Exception as e:
-                # Méthode de secours
-                st.info("Utilisation de la méthode SHAP alternative...")
-                return None, None
-                
-        else:
-            return None, None
-            
-    except Exception as e:
-        st.info(f"Analyse SHAP simplifiée non disponible")
-        return None, None
-#def compute_shap_analysis(model, input_data, feature_names, model_name):
-#    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions"""
-#    try:
-        # Vérifier que le modèle supporte predict_proba
-#        if not hasattr(model, 'predict_proba'):
-  #          return None, None
-            
         # Convertir en numpy array pour éviter les problèmes d'encodage
-   #     input_array = input_data.values if hasattr(input_data, 'values') else input_data
+        input_array = input_data.values if hasattr(input_data, 'values') else input_data
         
-    #    # Initialiser l'explainer SHAP selon le type de modèle
-     #   if model_name in ['XGBoost', 'Random Forest', 'Decision Tree']:
-     #       # Pour XGBoost, utiliser TreeExplainer avec paramètres spécifiques
-  #          explainer = shap.TreeExplainer(
- #               model,
-#                feature_perturbation="interventional",
-#                model_output="probability"
-#            )
- #           shap_values = explainer.shap_values(input_array)
+        # Initialiser l'explainer SHAP selon le type de modèle
+        if model_name in ['XGBoost', 'Random Forest', 'Decision Tree']:
+            # Pour XGBoost, utiliser TreeExplainer avec paramètres spécifiques
+            explainer = shap.TreeExplainer(
+                model,
+                feature_perturbation="interventional",
+                model_output="probability"
+            )
+            shap_values = explainer.shap_values(input_array)
             
-#            # Pour les classifieurs, shap_values peut être une liste [classe_0, classe_1]
-#            if isinstance(shap_values, list) and len(shap_values) == 2:
-#                shap_values = shap_values[1]  # Prendre les valeurs pour la classe positive (DEFAUT)
- #           elif isinstance(shap_values, list) and len(shap_values) > 2:
-#                shap_values = shap_values[-1]  # Dernière classe
+            # Pour les classifieurs, shap_values peut être une liste [classe_0, classe_1]
+            if isinstance(shap_values, list) and len(shap_values) == 2:
+                shap_values = shap_values[1]  # Prendre les valeurs pour la classe positive (DEFAUT)
+            elif isinstance(shap_values, list) and len(shap_values) > 2:
+                shap_values = shap_values[-1]  # Dernière classe
                 
-#        elif model_name == 'Logistic Regression':
-#            explainer = shap.LinearExplainer(model, input_array)
-   #         shap_values = explainer.shap_values(input_array)
-  #      else:
- #           # Pour SVM et autres modèles, utiliser KernelExplainer avec moins d'échantillons
-#            explainer = shap.KernelExplainer(
-    #            model.predict_proba, 
-   #             shap.sample(input_array, min(100, len(input_array)))
-  #          )
-  #          shap_values = explainer.shap_values(input_array, nsamples=100)
-    #        if isinstance(shap_values, list) and len(shap_values) == 2:
-   #             shap_values = shap_values[1]
+        elif model_name == 'Logistic Regression':
+            explainer = shap.LinearExplainer(model, input_array)
+            shap_values = explainer.shap_values(input_array)
+        else:
+            # Pour SVM et autres modèles, utiliser KernelExplainer avec moins d'échantillons
+            explainer = shap.KernelExplainer(
+                model.predict_proba, 
+                shap.sample(input_array, min(100, len(input_array)))
+            )
+            shap_values = explainer.shap_values(input_array, nsamples=100)
+            if isinstance(shap_values, list) and len(shap_values) == 2:
+                shap_values = shap_values[1]
         
         # S'assurer que shap_values est un array 2D
-  #      if shap_values is not None:
-  #          if len(shap_values.shape) == 1:
-  #              shap_values = shap_values.reshape(1, -1)
+        if shap_values is not None:
+            if len(shap_values.shape) == 1:
+                shap_values = shap_values.reshape(1, -1)
             
             # Vérifier que la forme correspond aux features
-  #          if shap_values.shape[1] != len(feature_names):
- #               st.warning(f"Incompatibilité: {shap_values.shape[1]} valeurs SHAP vs {len(feature_names)} features")
-  #              return None, None
+            if shap_values.shape[1] != len(feature_names):
+                st.warning(f"Incompatibilité: {shap_values.shape[1]} valeurs SHAP vs {len(feature_names)} features")
+                return None, None
         
- #       return explainer, shap_values
+        return explainer, shap_values
         
- #   except Exception as e:
- #       st.warning(f"Analyse SHAP non disponible: {str(e)}")
- #       return None, None
+    except Exception as e:
+        st.warning(f"Analyse SHAP non disponible: {str(e)}")
+        return None, None
 
 def plot_shap_summary(shap_values, input_data, feature_names):
     """Crée un graphique summary plot SHAP interactif"""
