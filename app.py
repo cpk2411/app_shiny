@@ -220,24 +220,38 @@ def load_preprocessors():
 # ================================
 
 def compute_shap_analysis(model, input_data, feature_names, model_name):
-    """SHAP - Version compatible cloud"""
+    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions"""
     try:
-        # Méthode la plus basique possible
-        import shap
+        # Vérifier que le modèle supporte predict_proba
+        if not hasattr(model, 'predict_proba'):
+            st.warning(f"Le modèle {model_name} ne supporte pas predict_proba, SHAP non disponible")
+            return None, None
+            
+        # Initialiser l'explainer SHAP selon le type de modèle
+        if model_name in ['XGBoost', 'Random Forest', 'Decision Tree']:
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(input_data)
+            # Pour les classifieurs, shap_values peut être une liste [classe_0, classe_1]
+            if isinstance(shap_values, list) and len(shap_values) == 2:
+                shap_values = shap_values[1]  # Prendre les valeurs pour la classe positive
+        elif model_name == 'Logistic Regression':
+            explainer = shap.LinearExplainer(model, input_data)
+            shap_values = explainer.shap_values(input_data)
+        else:
+            # Pour SVM et autres modèles, utiliser KernelExplainer
+            explainer = shap.KernelExplainer(model.predict_proba, input_data)
+            shap_values = explainer.shap_values(input_data)
+            if isinstance(shap_values, list) and len(shap_values) == 2:
+                shap_values = shap_values[1]  # Classe positive
         
-        # Créer l'explainer avec des paramètres minimaux
-        explainer = shap.TreeExplainer(model)
+        # S'assurer que shap_values est un array 2D
+        if shap_values is not None and len(shap_values.shape) == 1:
+            shap_values = shap_values.reshape(1, -1)
         
-        # Calcul simple
-        shap_values = explainer.shap_values(input_data, check_additivity=False)
-        
-        # Formatage basique
-        if isinstance(shap_values, list):
-            return explainer, shap_values[1] if len(shap_values) > 1 else shap_values[0]
         return explainer, shap_values
         
     except Exception as e:
-        # Échec silencieux
+        st.warning(f"Analyse SHAP non disponible pour {model_name}: {e}")
         return None, None
 
 def plot_shap_summary(shap_values, input_data, feature_names):
