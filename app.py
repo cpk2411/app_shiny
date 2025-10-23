@@ -220,11 +220,10 @@ def load_preprocessors():
 # ================================
 
 def compute_shap_analysis(model, input_data, feature_names, model_name):
-    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions"""
+    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions - VERSION DÉPLOIEMENT"""
     try:
         # Vérifier que le modèle supporte predict_proba
         if not hasattr(model, 'predict_proba'):
-            st.warning(f"Le modèle {model_name} ne supporte pas predict_proba, SHAP non disponible")
             return None, None
             
         # Initialiser l'explainer SHAP selon le type de modèle
@@ -251,7 +250,7 @@ def compute_shap_analysis(model, input_data, feature_names, model_name):
         return explainer, shap_values
         
     except Exception as e:
-        st.warning(f"Analyse SHAP non disponible pour {model_name}: {e}")
+        # Ne pas afficher le détail de l'erreur pour éviter les problèmes d'encodage
         return None, None
 
 def plot_shap_summary(shap_values, input_data, feature_names):
