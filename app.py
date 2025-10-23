@@ -220,29 +220,22 @@ def load_preprocessors():
 # ================================
 
 def compute_shap_analysis(model, input_data, feature_names, model_name):
-    """Calcule SHAP - VERSION ULTIME POUR DÉPLOIEMENT"""
+    """SHAP - Version compatible cloud"""
     try:
-        # Vérification basique
-        if model is None:
-            return None, None
-            
-        # Méthode DIRECTE pour XGBoost
+        # Méthode la plus basique possible
+        import shap
+        
+        # Créer l'explainer avec des paramètres minimaux
         explainer = shap.TreeExplainer(model)
         
-        # Calcul des valeurs SHAP
-        shap_values = explainer.shap_values(input_data)
+        # Calcul simple
+        shap_values = explainer.shap_values(input_data, check_additivity=False)
         
-        # Gestion du format des résultats
+        # Formatage basique
         if isinstance(shap_values, list):
-            # Si c'est une liste [classe_0, classe_1], prendre la classe positive (défaut)
-            if len(shap_values) == 2:
-                return explainer, shap_values[1]
-            else:
-                return explainer, shap_values[0]
-        else:
-            # Si c'est un array simple
-            return explainer, shap_values
-            
+            return explainer, shap_values[1] if len(shap_values) > 1 else shap_values[0]
+        return explainer, shap_values
+        
     except Exception as e:
         # Échec silencieux
         return None, None
