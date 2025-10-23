@@ -220,37 +220,31 @@ def load_preprocessors():
 # ================================
 
 def compute_shap_analysis(model, input_data, feature_names, model_name):
-    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions - VERSION DÉPLOIEMENT"""
+    """Calcule SHAP - VERSION ULTIME POUR DÉPLOIEMENT"""
     try:
-        # Vérifier que le modèle supporte predict_proba
-        if not hasattr(model, 'predict_proba'):
+        # Vérification basique
+        if model is None:
             return None, None
             
-        # Initialiser l'explainer SHAP selon le type de modèle
-        if model_name in ['XGBoost', 'Random Forest', 'Decision Tree']:
-            explainer = shap.TreeExplainer(model)
-            shap_values = explainer.shap_values(input_data)
-            # Pour les classifieurs, shap_values peut être une liste [classe_0, classe_1]
-            if isinstance(shap_values, list) and len(shap_values) == 2:
-                shap_values = shap_values[1]  # Prendre les valeurs pour la classe positive
-        elif model_name == 'Logistic Regression':
-            explainer = shap.LinearExplainer(model, input_data)
-            shap_values = explainer.shap_values(input_data)
+        # Méthode DIRECTE pour XGBoost
+        explainer = shap.TreeExplainer(model)
+        
+        # Calcul des valeurs SHAP
+        shap_values = explainer.shap_values(input_data)
+        
+        # Gestion du format des résultats
+        if isinstance(shap_values, list):
+            # Si c'est une liste [classe_0, classe_1], prendre la classe positive (défaut)
+            if len(shap_values) == 2:
+                return explainer, shap_values[1]
+            else:
+                return explainer, shap_values[0]
         else:
-            # Pour SVM et autres modèles, utiliser KernelExplainer
-            explainer = shap.KernelExplainer(model.predict_proba, input_data)
-            shap_values = explainer.shap_values(input_data)
-            if isinstance(shap_values, list) and len(shap_values) == 2:
-                shap_values = shap_values[1]  # Classe positive
-        
-        # S'assurer que shap_values est un array 2D
-        if shap_values is not None and len(shap_values.shape) == 1:
-            shap_values = shap_values.reshape(1, -1)
-        
-        return explainer, shap_values
-        
+            # Si c'est un array simple
+            return explainer, shap_values
+            
     except Exception as e:
-        # Ne pas afficher le détail de l'erreur pour éviter les problèmes d'encodage
+        # Échec silencieux
         return None, None
 
 def plot_shap_summary(shap_values, input_data, feature_names):
