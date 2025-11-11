@@ -1503,7 +1503,7 @@ def show_predictions():
             # ================================
             # Dans la fonction show_predictions(), remplacez la section SHAP par :
 
-if enable_shap:
+            if enable_shap:
                 try:
                     st.markdown("---")
                     st.markdown('<div class="section-header">🔍 Analyse Explicative SHAP</div>', unsafe_allow_html=True)
