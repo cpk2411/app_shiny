@@ -220,38 +220,85 @@ def load_preprocessors():
 # ================================
 
 def compute_shap_analysis(model, input_data, feature_names, model_name):
-    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions"""
+    """Calcule et retourne les valeurs SHAP pour l'explication des prédictions - VERSION CORRIGÉE"""
     try:
         # Vérifier que le modèle supporte predict_proba
         if not hasattr(model, 'predict_proba'):
             st.warning(f"Le modèle {model_name} ne supporte pas predict_proba, SHAP non disponible")
             return None, None
+        
+        # Vérifier et nettoyer les données d'entrée
+        input_data_clean = input_data.copy()
+        
+        # Convertir toutes les colonnes en numérique, forcer les erreurs pour identifier les problèmes
+        for col in input_data_clean.columns:
+            input_data_clean[col] = pd.to_numeric(input_data_clean[col], errors='coerce')
+        
+        # Vérifier s'il y a des valeurs NaN après conversion
+        if input_data_clean.isnull().any().any():
+            st.warning("Certaines valeurs ne peuvent pas être converties en nombres. Nettoyage en cours...")
+            # Remplacer les NaN par 0 ou une valeur par défaut
+            input_data_clean = input_data_clean.fillna(0)
+        
+        # Vérifier que toutes les données sont numériques
+        if not all(input_data_clean.dtypes.apply(lambda x: np.issubdtype(x, np.number))):
+            st.error("Les données d'entrée contiennent encore des valeurs non numériques après nettoyage")
+            return None, None
             
         # Initialiser l'explainer SHAP selon le type de modèle
         if model_name in ['XGBoost', 'Random Forest', 'Decision Tree']:
-            explainer = shap.TreeExplainer(model)
-            shap_values = explainer.shap_values(input_data)
-            # Pour les classifieurs, shap_values peut être une liste [classe_0, classe_1]
-            if isinstance(shap_values, list) and len(shap_values) == 2:
-                shap_values = shap_values[1]  # Prendre les valeurs pour la classe positive
+            try:
+                explainer = shap.TreeExplainer(model)
+                shap_values = explainer.shap_values(input_data_clean)
+                
+                # Pour les classifieurs binaires, shap_values peut être une liste [classe_0, classe_1]
+                # ou un array 2D avec les valeurs pour chaque classe
+                if isinstance(shap_values, list) and len(shap_values) == 2:
+                    shap_values = shap_values[1]  # Prendre les valeurs pour la classe positive
+                elif len(shap_values.shape) == 3 and shap_values.shape[2] == 2:
+                    shap_values = shap_values[:, :, 1]  # Pour la classe positive dans un array 3D
+                
+            except Exception as tree_error:
+                st.warning(f"TreeExplainer a échoué, tentative avec KernelExplainer: {tree_error}")
+                # Fallback vers KernelExplainer
+                try:
+                    explainer = shap.KernelExplainer(model.predict_proba, input_data_clean)
+                    shap_values = explainer.shap_values(input_data_clean)
+                    if isinstance(shap_values, list) and len(shap_values) == 2:
+                        shap_values = shap_values[1]  # Classe positive
+                except Exception as kernel_error:
+                    st.warning(f"KernelExplainer a également échoué: {kernel_error}")
+                    return None, None
+                    
         elif model_name == 'Logistic Regression':
-            explainer = shap.LinearExplainer(model, input_data)
-            shap_values = explainer.shap_values(input_data)
+            try:
+                explainer = shap.LinearExplainer(model, input_data_clean)
+                shap_values = explainer.shap_values(input_data_clean)
+            except Exception as linear_error:
+                st.warning(f"LinearExplainer a échoué: {linear_error}")
+                return None, None
         else:
             # Pour SVM et autres modèles, utiliser KernelExplainer
-            explainer = shap.KernelExplainer(model.predict_proba, input_data)
-            shap_values = explainer.shap_values(input_data)
-            if isinstance(shap_values, list) and len(shap_values) == 2:
-                shap_values = shap_values[1]  # Classe positive
+            try:
+                explainer = shap.KernelExplainer(model.predict_proba, input_data_clean)
+                shap_values = explainer.shap_values(input_data_clean)
+                if isinstance(shap_values, list) and len(shap_values) == 2:
+                    shap_values = shap_values[1]  # Classe positive
+            except Exception as kernel_error:
+                st.warning(f"KernelExplainer a échoué: {kernel_error}")
+                return None, None
         
         # S'assurer que shap_values est un array 2D
-        if shap_values is not None and len(shap_values.shape) == 1:
-            shap_values = shap_values.reshape(1, -1)
+        if shap_values is not None:
+            if len(shap_values.shape) == 1:
+                shap_values = shap_values.reshape(1, -1)
+            elif len(shap_values.shape) == 3:
+                shap_values = shap_values.reshape(shap_values.shape[0], shap_values.shape[1])
         
         return explainer, shap_values
         
     except Exception as e:
-        st.warning(f"Analyse SHAP non disponible pour {model_name}: {e}")
+        st.warning(f"Analyse SHAP non disponible pour {model_name}: {str(e)}")
         return None, None
 
 def plot_shap_summary(shap_values, input_data, feature_names):
